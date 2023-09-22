@@ -22,7 +22,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
-*/
+ */
 
 namespace Playsms;
 
@@ -30,7 +30,7 @@ namespace Playsms;
  * Dead simple PHP template engine
  *
  * @author Anton Raharja
- * @link https://github.com/antonraharja/tpl
+ * @link https://github.com/playsms/tpl
  */
 class Tpl
 {
@@ -48,10 +48,10 @@ class Tpl
 	private $_config_dir_template = './templates';
 	private $_config_dir_cache = './cache';
 	private $_config_extension = '.html';
-	
+
 	// array holding configuration
 	public $config = array();
-	
+
 	// template rules
 	public $name;
 	public $vars = array();
@@ -63,7 +63,8 @@ class Tpl
 	 * Constructor
 	 * @param array $config Default configuration
 	 */
-	function __construct($config = array()) {
+	function __construct($config = array())
+	{
 		$default = array(
 			'echo' => $this->_config_echo,
 			'dir_template' => $this->_config_dir_template,
@@ -73,79 +74,88 @@ class Tpl
 
 		$this->config = array_merge($default, $config);
 	}
-	
+
 	// private methods
-	
-	
+
+
 	/**
 	 * Sanitize inputs
 	 * @param string $inputs Input contents before processing
 	 */
-	private function _sanitize($inputs) {
+	private function _sanitize($inputs)
+	{
+		$inputs = (string) $inputs;
+
 		$inputs = str_ireplace('`', '', $inputs);
 		$inputs = str_ireplace('<?php', '', $inputs);
 		$inputs = str_ireplace('<?', '', $inputs);
 		$inputs = str_ireplace('?>', '', $inputs);
-		
+
 		return $inputs;
 	}
-	
+
 	/**
 	 * Template string manipulation
-	 * @param  string $key     Template key
-	 * @param  string $val     Template value
+	 * @param  string $key Template key
+	 * @param  string $val Template value
 	 */
-	private function _setString($key, $val) {
+	private function _setString($key, $val)
+	{
 		$val = $this->_sanitize($val);
 		$this->_result = str_replace('{{' . $key . '}}', $val, $this->_result);
 	}
-	
+
 	/**
 	 * Template loop manipulation
-	 * @param  string $key     Template key
-	 * @param  string $val     Template value
+	 * @param  string $key Template key
+	 * @param  array $val Template value
 	 */
-	private function _setArray($key, $val) {
+	private function _setArray($key, $val = [])
+	{
+		$val = is_array($val) ? $val : [];
+
 		preg_match("/<loop\." . $key . ">(.*?)<\/loop\." . $key . ">/s", $this->_result, $l);
-		
+
 		$loop_content = '';
 		$loop = $l[1];
-		foreach ($val as $v) {
+		foreach ( $val as $v ) {
 			$loop_replaced = $loop;
-			foreach ($v as $x => $y) {
+			foreach ( $v as $x => $y ) {
 				$loop_replaced = str_replace('{{' . $key . '.' . $x . '}}', $y, $loop_replaced);
 			}
-			$loop_content.= $loop_replaced;
+			$loop_content .= $loop_replaced;
 		}
-		
+
 		$this->_result = preg_replace("/<loop\." . $key . ">(.*?)<\/loop\." . $key . ">/s", preg_quote($loop_content), $this->_result);
 		$this->_result = stripslashes($this->_result);
 
 		$this->_result = str_replace("<loop." . $key . ">", '', $this->_result);
 		$this->_result = str_replace("</loop." . $key . ">", '', $this->_result);
 	}
-	
+
 	/**
 	 * Template boolean manipulation
 	 * @param  string $key     Template key
-	 * @param  string $val     Template value
+	 * @param  bool $val     Template value
 	 */
-	private function _setBool($key, $val) {
+	private function _setBool($key, $val)
+	{
 		if ($key && !$val) {
 			$this->_result = preg_replace("/<if\." . $key . ">(.*?)<\/if\." . $key . ">/s", '', $this->_result);
 		}
 		$this->_result = str_replace("<if." . $key . ">", '', $this->_result);
 		$this->_result = str_replace("</if." . $key . ">", '', $this->_result);
 	}
-	
+
 	/**
 	 * Set content from file
 	 */
-	private function _setContentFromFile() {
-		
+	private function _setContentFromFile()
+	{
+
 		// empty original template content
 		$this->setContent('');
-		
+
 		// check for template file and load it
 		if ($filename = $this->getTemplate()) {
 			if (file_exists($filename)) {
@@ -154,62 +164,63 @@ class Tpl
 			}
 		}
 	}
-	
+
 	/**
 	 * Process original content according to template rules and settings
 	 */
-	private function _compile() {
-		
+	private function _compile()
+	{
+
 		// remove spaces
 		$this->_result = str_replace('{{ ', '{{', $this->getContent());
 		$this->_result = str_replace(' }}', '}}', $this->_result);
-		
+
 		// check if
 		if ($this->ifs) {
-			foreach ($this->ifs as $key => $val) {
+			foreach ( $this->ifs as $key => $val ) {
 				$this->_setBool($key, $val);
 			}
 			empty($this->ifs);
 		}
-		
+
 		// check loop
 		if ($this->loops) {
-			foreach ($this->loops as $key => $val) {
+			foreach ( $this->loops as $key => $val ) {
 				$this->_setArray($key, $val);
 			}
 			empty($this->loops);
 		}
-		
+
 		// check static replaces
-		if ($this->vars) {
-			foreach ($this->vars as $key => $val) {
+		if (isset($this->vars) && is_array($this->vars) && $this->vars) {
+			foreach ( $this->vars as $key => $val ) {
 				$this->_setString($key, $val);
 			}
 			empty($this->vars);
 		}
-		
+
 		// include global vars
-		if (is_array($this->injects)) {
-			foreach ($this->injects as $inject) {
-				global $ {
-					$inject
+		if (isset($this->injects) && is_array($this->injects) && $this->injects) {
+			foreach ( $this->injects as $inject ) {
+				global ${
+				$inject
 				};
 			}
 			extract($this->injects);
 		}
-		
+
 		// remove if and loop traces
 		$this->_result = preg_replace("/<if\..*?>(.*?)<\/if\..*?>/s", '', $this->_result);
 		$this->_result = preg_replace("/<loop\..*?>(.*?)<\/loop\..*?>/s", '', $this->_result);
-		
+
 		// check dynamic variables
 		$pattern = "\{\{(.*?)\}\}";
 		preg_match_all("/" . $pattern . "/", $this->_result, $matches, PREG_SET_ORDER);
-		foreach ($matches as $block) {
+		foreach ( $matches as $block ) {
 			$chunk = $block[0];
-			
+
 			// fixme anton - allow only PHP variables
-            $block[1] = trim($block[1]);
+			$block[1] = trim($block[1]);
 			if (preg_match("/^([\$][a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*[a-zA-Z0-9_\[\]\'\"\-\>]*)$/", $block[1])) {
 				$codes = '<?php ' . $this->config['echo'] . '(' . $block[1] . ')' . '; ?>';
 
@@ -218,30 +229,41 @@ class Tpl
 				$this->_result = str_replace($chunk, '', $this->_result);
 			}
 		}
-		
+
 		// at this point $this->_result contains final manipulation ready to be included or eval-ed
 		// $this->_result
-		
+
 		// attempt to create cache file for this template in storage directory
-		$cache_file = md5($this->_filename) . '.compiled';
+		$cache_file = 'playsms_tpl_' . md5(str_shuffle($this->_filename) . mt_rand()) . '.compiled';
 		$cache = $this->config['dir_cache'] . '/' . $cache_file;
-		$fd = @fopen($cache, 'w+');
-		@fwrite($fd, $this->_result);
-		@fclose($fd);
-		
-		// when failed, try to create in /tmp
-		if (!file_exists($cache)) {
-			$cache = '/tmp/' . $cache_file;
-			$fd = @fopen($cache, 'w+');
-			@fwrite($fd, $this->_result);
-			@fclose($fd);
+
+		// cache file must not be exists
+		if (is_file($cache)) {
+			if (!unlink($cache)) {
+				$this->_compiled = '';
+				return;
+			}
 		}
-		
+
+		if ($fd = fopen($cache, 'w+')) {
+			fwrite($fd, $this->_result);
+			fclose($fd);
+		}
+
+		// when failed, try to create in /tmp
+		if (!is_file($cache)) {
+			$cache = '/tmp/' . $cache_file;
+			if ($fd = @fopen($cache, 'w+')) {
+				fwrite($fd, $this->_result);
+				fclose($fd);
+			}
+		}
+
 		// if template cache file created then include it, else use eval() to compile
 		ob_start();
 		if (file_exists($cache)) {
 			include $cache;
-			@unlink($cache);
+			unlink($cache);
 		} else {
 			eval('?>' . $this->_result . '<?php ');
 		}
@@ -251,18 +273,18 @@ class Tpl
 		// final check - remove unwanted templates
 		$pattern = "\{\{(.*?)\}\}";
 		preg_match_all("/" . $pattern . "/", $_temp_compiled, $matches, PREG_SET_ORDER);
-		foreach ($matches as $block) {
+		foreach ( $matches as $block ) {
 			$chunk = $block[0];
 			$_temp_compiled = str_replace($chunk, '', $_temp_compiled);
 		}
-		
+
 		// save finals
 		$this->_compiled = $_temp_compiled;
 	}
-	
+
 	// public methods
-	
-	
+
+
 
 	/**
 	 * Set configuration
@@ -271,163 +293,179 @@ class Tpl
 	 * - dir_cache    : Compiled files path (default: ./cache)
 	 * - extension    : File extension (default: .html)
 	 * @param array $config Default configuration
+	 * @return Tpl Tpl object
 	 */
-	public function setConfig($config) {
+	public function setConfig($config)
+	{
 		$this->config = array_merge($this->config, $config);
-		
-		$this->config['echo'] = ( $this->config['echo'] ? $this->config['echo'] : $this->_config_echo );
-		$this->config['dir_template'] = ( $this->config['dir_template'] ? $this->config['dir_template'] : $this->_config_dir_template );
-		$this->config['dir_cache'] = ( $this->config['dir_cache'] ? $this->config['dir_cache'] : $this->_config_dir_cache );
-		$this->config['extension'] = ( $this->config['extension'] ? $this->config['extension'] : $this->_config_extension );
+
+		$this->config['echo'] = ($this->config['echo'] ? $this->config['echo'] : $this->_config_echo);
+		$this->config['dir_template'] = ($this->config['dir_template'] ? $this->config['dir_template'] : $this->_config_dir_template);
+		$this->config['dir_cache'] = ($this->config['dir_cache'] ? $this->config['dir_cache'] : $this->_config_dir_cache);
+		$this->config['extension'] = ($this->config['extension'] ? $this->config['extension'] : $this->_config_extension);
 
 		return $this;
 	}
-	
+
 	/**
 	 * Get configuration
 	 * @return array Default configuration
 	 */
-	public function getConfig() {
+	public function getConfig()
+	{
 		return $this->config;
 	}
-	
+
 	/**
 	 * Set template name
 	 * @param string $name Name
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setName($name) {
+	function setName($name)
+	{
 		$this->name = $name;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Set template static variables
 	 * @param array $vars Variables
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setVars($vars) {
-		if (is_array($vars)) {
+	function setVars($vars)
+	{
+		if (isset($vars) && is_array($vars) && $vars) {
 			$this->vars = $vars;
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Set template logic rules
 	 * @param array $ifs IF logic rules
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setIfs($ifs) {
-		if (is_array($ifs)) {
+	function setIfs($ifs)
+	{
+		if (isset($ifs) && is_array($ifs) && $ifs) {
 			$this->ifs = $ifs;
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Set template loop rules
 	 * @param array $loops Loop rules
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setLoops($loops) {
-		if (is_array($loops)) {
+	function setLoops($loops)
+	{
+		if (isset($loops) && is_array($loops) && $loops) {
 			$this->loops = $loops;
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Set template injected global variables
 	 * @param array $injects List of injected global variables
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setInjects($injects) {
-		if (is_array($injects)) {
+	function setInjects($injects)
+	{
+		if (isset($injects) && is_array($injects) && $injects) {
 			$this->injects = $injects;
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Compile template
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function compile() {
-		
+	function compile()
+	{
+
 		// if no setContent() then load the from file
 		if (!$this->getContent()) {
-			
+
 			// if no setTemplate() then use default template file
 			if (!$this->getTemplate()) {
 				$this->setTemplate($this->config['dir_template'] . '/' . $this->name . $this->config['extension']);
 			}
-			
+
 			$this->_setContentFromFile();
 		}
-		
+
 		$this->_compile();
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Set full path template file
 	 * @param string $filename Filename
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setTemplate($filename) {
+	function setTemplate($filename)
+	{
+		$filename = trim(preg_replace('/[^\p{L}\p{N}\s._-]+/u', '', $filename));
 		$this->_filename = $filename;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Get full path template filename
 	 * @return string Filename
 	 */
-	function getTemplate() {
+	function getTemplate()
+	{
 		return $this->_filename;
 	}
-	
+
 	/**
 	 * Set original template content
 	 * @param string $content Original content
-	 * @return mixed Tpl object
+	 * @return Tpl Tpl object
 	 */
-	function setContent($content) {
+	function setContent($content)
+	{
 		$content = $this->_sanitize($content);
 		$this->_content = $content;
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Get original template content
 	 * @return string Original content
 	 */
-	function getContent() {
+	function getContent()
+	{
 		return $this->_content;
 	}
-	
+
 	/**
 	 * Get manipulated template content
 	 * @return string Manipulated content
 	 */
-	function getResult() {
+	function getResult()
+	{
 		return $this->_result;
 	}
-	
+
 	/**
 	 * Get compiled template content
 	 * @return string Compiled content
 	 */
-	function getCompiled() {
+	function getCompiled()
+	{
 		return $this->_compiled;
 	}
 }
