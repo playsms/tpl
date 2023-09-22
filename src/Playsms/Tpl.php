@@ -81,6 +81,7 @@ class Tpl
 	/**
 	 * Sanitize inputs
 	 * @param string $inputs Input contents before processing
+	 * @return string Sanitized input contents
 	 */
 	private function _sanitize($inputs)
 	{
@@ -95,20 +96,34 @@ class Tpl
 	}
 
 	/**
+	 * Sanitize file name
+	 * @param string $filename File name
+	 * @return string Sanitized file name
+	 */
+	private function _sanitize_filename($filename)
+	{
+		return trim(preg_replace('/[^\p{L}\p{N}\s._-]+/u', '', $filename));
+	}
+
+	/**
 	 * Template string manipulation
 	 * @param  string $key Template key
 	 * @param  string $val Template value
+	 * @return Tpl Tpl object
 	 */
 	private function _setString($key, $val)
 	{
 		$val = $this->_sanitize($val);
 		$this->_result = str_replace('{{' . $key . '}}', $val, $this->_result);
+
+		return $this;
 	}
 
 	/**
 	 * Template loop manipulation
 	 * @param  string $key Template key
 	 * @param  array $val Template value
+	 * @return Tpl Tpl object
 	 */
 	private function _setArray($key, $val = [])
 	{
@@ -131,12 +146,15 @@ class Tpl
 
 		$this->_result = str_replace("<loop." . $key . ">", '', $this->_result);
 		$this->_result = str_replace("</loop." . $key . ">", '', $this->_result);
+
+		return $this;
 	}
 
 	/**
 	 * Template boolean manipulation
 	 * @param  string $key     Template key
 	 * @param  bool $val     Template value
+	 * @return Tpl Tpl object
 	 */
 	private function _setBool($key, $val)
 	{
@@ -145,10 +163,13 @@ class Tpl
 		}
 		$this->_result = str_replace("<if." . $key . ">", '', $this->_result);
 		$this->_result = str_replace("</if." . $key . ">", '', $this->_result);
+
+		return $this;
 	}
 
 	/**
 	 * Set content from file
+	 * @return Tpl Tpl object
 	 */
 	private function _setContentFromFile()
 	{
@@ -163,10 +184,13 @@ class Tpl
 				$this->setContent($content);
 			}
 		}
+
+		return $this;
 	}
 
 	/**
 	 * Process original content according to template rules and settings
+	 * @return Tpl Tpl object
 	 */
 	private function _compile()
 	{
@@ -241,7 +265,7 @@ class Tpl
 		if (is_file($cache)) {
 			if (!unlink($cache)) {
 				$this->_compiled = '';
-				return;
+				return $this;
 			}
 		}
 
@@ -261,7 +285,7 @@ class Tpl
 
 		// if template cache file created then include it, else use eval() to compile
 		ob_start();
-		if (file_exists($cache)) {
+		if (is_file($cache)) {
 			include $cache;
 			unlink($cache);
 		} else {
@@ -280,6 +304,8 @@ class Tpl
 
 		// save finals
 		$this->_compiled = $_temp_compiled;
+
+		return $this;
 	}
 
 	// public methods
@@ -414,7 +440,8 @@ class Tpl
 	 */
 	function setTemplate($filename)
 	{
-		$filename = trim(preg_replace('/[^\p{L}\p{N}\s._-]+/u', '', $filename));
+		$filename = $this->_sanitize_filename($filename);
+
 		$this->_filename = $filename;
 
 		return $this;
