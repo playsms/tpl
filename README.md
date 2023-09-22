@@ -6,9 +6,9 @@ Dead simple PHP template engine
 Information      | Description
 ---------------- | ----------------
 Author           | Anton Raharja
-Version          | 1.0.8
+Version          | 1.0.9
 Release date     | 140422
-Last update      | 210910
+Last update      | 230922
 
 
 Install
