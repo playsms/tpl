@@ -96,16 +96,6 @@ class Tpl
 	}
 
 	/**
-	 * Sanitize file name
-	 * @param string $filename File name
-	 * @return string Sanitized file name
-	 */
-	private function _sanitize_filename($filename)
-	{
-		return trim(preg_replace('/[^\p{L}\p{N}\s._-]+/u', '', $filename));
-	}
-
-	/**
 	 * Template string manipulation
 	 * @param  string $key Template key
 	 * @param  string $val Template value
@@ -440,8 +430,6 @@ class Tpl
 	 */
 	function setTemplate($filename)
 	{
-		$filename = $this->_sanitize_filename($filename);
-
 		$this->_filename = $filename;
 
 		return $this;
