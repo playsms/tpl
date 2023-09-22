@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+Version 1.0.10
+--------------
+
+* remove version attribute from composer.json
+
+Version 1.0.9
+-------------
+
+* works with php 8.1 on ubuntu 22.04
+
 Version 1.0.8
 -------------
 

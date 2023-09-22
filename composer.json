@@ -4,7 +4,6 @@
     "keywords": ["template", "tpl", "layout", "playsms"],
     "homepage": "http://github.com/playsms/tpl",
     "license": "MIT",
-    "version": "1.0.8",
     "authors": [
         {
             "name": "Anton Raharja",
