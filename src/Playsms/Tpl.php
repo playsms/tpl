@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2014 Anton Raharja <antonrd at gmail dot com>.
+ * Copyright 2014 Anton Raharja <araharja at pm dot me>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,20 +50,20 @@ class Tpl
 	private $_config_extension = '.html';
 
 	// array holding configuration
-	public $config = array();
+	public $config = [];
 
 	// template rules
 	public $name;
-	public $vars = array();
-	public $ifs = array();
-	public $loops = array();
-	public $injects = array();
+	public $vars = [];
+	public $ifs = [];
+	public $loops = [];
+	public $injects = [];
 
 	/**
 	 * Constructor
 	 * @param array $config Default configuration
 	 */
-	function __construct($config = array())
+	function __construct($config = [])
 	{
 		$default = array(
 			'echo' => $this->_config_echo,
@@ -85,9 +85,7 @@ class Tpl
 	 */
 	private function _sanitize($inputs)
 	{
-		$inputs = (string) $inputs;
-
-		$inputs = str_ireplace('`', '', $inputs);
+		$inputs = str_ireplace('`', '', (string) $inputs);
 		$inputs = str_ireplace('<?php', '', $inputs);
 		$inputs = str_ireplace('<?', '', $inputs);
 		$inputs = str_ireplace('?>', '', $inputs);
@@ -170,8 +168,9 @@ class Tpl
 		// check for template file and load it
 		if ($filename = $this->getTemplate()) {
 			if (file_exists($filename)) {
-				$content = trim(file_get_contents($this->_filename));
-				$this->setContent($content);
+				if ($content = file_get_contents($filename)) {
+					$this->setContent(trim($content));
+				}
 			}
 		}
 
@@ -194,7 +193,7 @@ class Tpl
 			foreach ( $this->ifs as $key => $val ) {
 				$this->_setBool($key, $val);
 			}
-			empty($this->ifs);
+			unset($this->ifs);
 		}
 
 		// check loop
@@ -202,7 +201,7 @@ class Tpl
 			foreach ( $this->loops as $key => $val ) {
 				$this->_setArray($key, $val);
 			}
-			empty($this->loops);
+			unset($this->loops);
 		}
 
 		// check static replaces
@@ -210,7 +209,7 @@ class Tpl
 			foreach ( $this->vars as $key => $val ) {
 				$this->_setString($key, $val);
 			}
-			empty($this->vars);
+			unset($this->vars);
 		}
 
 		// include global vars
@@ -313,7 +312,9 @@ class Tpl
 	 */
 	public function setConfig($config)
 	{
-		$this->config = array_merge($this->config, $config);
+		if (is_array($config)) {
+			$this->config = array_merge($this->config, $config);
+		}
 
 		$this->config['echo'] = ($this->config['echo'] ? $this->config['echo'] : $this->_config_echo);
 		$this->config['dir_template'] = ($this->config['dir_template'] ? $this->config['dir_template'] : $this->_config_dir_template);
@@ -339,7 +340,7 @@ class Tpl
 	 */
 	function setName($name)
 	{
-		$this->name = $name;
+		$this->name = !is_array($name) ? (string) $name : '';
 
 		return $this;
 	}
@@ -430,7 +431,7 @@ class Tpl
 	 */
 	function setTemplate($filename)
 	{
-		$this->_filename = $filename;
+		$this->_filename = !is_array($filename) ? (string) $filename : '';
 
 		return $this;
 	}
@@ -451,7 +452,7 @@ class Tpl
 	 */
 	function setContent($content)
 	{
-		$content = $this->_sanitize($content);
+		$content = $this->_sanitize(!is_array($content) ? (string) $content : '');
 		$this->_content = $content;
 
 		return $this;
