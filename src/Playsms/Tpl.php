@@ -124,7 +124,7 @@ class Tpl
 		foreach ( $val as $v ) {
 			$loop_replaced = $loop;
 			foreach ( $v as $x => $y ) {
-				$loop_replaced = str_replace('{{' . $key . '.' . $x . '}}', $y, $loop_replaced);
+				$loop_replaced = str_replace('{{' . $key . '.' . $x . '}}', (string) $y, $loop_replaced);
 			}
 			$loop_content .= $loop_replaced;
 		}
